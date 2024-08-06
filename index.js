@@ -71,7 +71,7 @@ app.get('/api/pageset/:num', (req, res) => {
 })
 */
 
-const port = process.env.PORT || 80;
+const port = process.env.PORT || 3000;
 //const port = 5000;
 app.listen(port, () =>{
     console.log(`Listening on ${port}.`);
