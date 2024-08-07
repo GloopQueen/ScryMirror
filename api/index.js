@@ -43,6 +43,24 @@ app.get('/api/currentstatus', (req, res) => {
     res.send(currentstatus); 
 })
 
+
+app.get('/api/statusjson', (req, res) => {
+    var pageInt = parseInt(scenecontrol.currentPage());
+    var timeInt = parseInt(scenecontrol.epochTime());
+    
+    var d = new Date();
+    let s = secondsSolver(d.getSeconds());
+
+
+    res.json({
+        thePage: pageInt ,
+        currentEpochStamp: timeInt ,
+        currentSeconds: s
+    }
+    )
+})
+
+
 app.get('/api/pageset/:num', (req, res) => {
     var pageInt = parseInt(req.params.num);
     console.log(scenecontrol.currentPage());
