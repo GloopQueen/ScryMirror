@@ -5,7 +5,7 @@ var cors = require('cors');
 
 app.use(cors());
 
-scenecontrol.setCurrentPage(2);
+scenecontrol.setCurrentPage(0);
 
 const delaySeconds = 7;
 
