@@ -1,9 +1,15 @@
 const express = require('express');
 const scenecontrol = require('./scenecontrol.js');
+const defenders = require('./routers/defenders.js');
 const app = express();
 var cors = require('cors');
 
+// Express middleware setup
 app.use(cors());
+
+// Express local constants initialization
+app.locals.currentAttackId = 0;
+app.locals.defendersCount = {};
 
 scenecontrol.setCurrentPage(0);
 
@@ -55,13 +61,17 @@ app.get('/api/statusjson', (req, res) => {
     res.json({
         thePage: pageInt ,
         currentEpochStamp: timeInt ,
-        currentSeconds: s
+        currentSeconds: s,
+        currentAttackId: app.locals.currentAttackId
     }
     )
 })
 
-
+/**
+ * @todo This should be a PATCH as it's updating an existing resource 
+ */
 app.get('/api/pageset/:num', (req, res) => {
+    app.locals.currentAttackId++;
     var pageInt = parseInt(req.params.num);
     console.log(scenecontrol.currentPage());
     scenecontrol.setCurrentPage(pageInt);
@@ -78,6 +88,8 @@ function secondsSolver(someNum){
    return a;
 }
 
+// Routes
+app.use("/api/defenders", defenders.defendersRouterCreator(app));
 
 /*
 app.get('/api/pageset/:num', (req, res) => {
