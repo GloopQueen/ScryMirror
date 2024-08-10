@@ -4,6 +4,13 @@ const defenders = require('./routers/defenders.js');
 const app = express();
 var cors = require('cors');
 
+
+// Adding some clumsy security to prevent potential harassment
+const THE_WEED_NUMBER = 69;
+const adminkey = process.env.ADMINKEY || THE_WEED_NUMBER;
+
+
+
 // Express middleware setup
 app.use(cors());
 
@@ -20,10 +27,13 @@ app.get('/', (req, res) =>{
     res.send("hello world!");
 });
 
+
+/// TODO: this is probably garbage
 app.get('/api/courses', (req, res) =>{
     res.send([1,2,3]);
 });
 
+/// TODO: this too can probably go
 app.get('/api/courses/:id', (req, res) => {
     res.send(req.params.id); 
     //res.send(req.query); - gets queries
@@ -53,6 +63,8 @@ app.get('/api/currentstatus', (req, res) => {
 app.get('/api/statusjson', (req, res) => {
     var pageInt = parseInt(scenecontrol.currentPage());
     var timeInt = parseInt(scenecontrol.epochTime());
+    var theHP = parseInt(scenecontrol.getRoundVars("hp"));
+    var theMP = parseInt(scenecontrol.getRoundVars("mp"));
     
     var d = new Date();
     let s = secondsSolver(d.getSeconds());
@@ -62,7 +74,9 @@ app.get('/api/statusjson', (req, res) => {
         thePage: pageInt ,
         currentEpochStamp: timeInt ,
         currentSeconds: s,
-        currentAttackId: app.locals.currentAttackId
+        currentAttackId: app.locals.currentAttackId,
+        roundHP: theHP,
+        roundMP: theMP,
     }
     )
 })
@@ -70,16 +84,50 @@ app.get('/api/statusjson', (req, res) => {
 /**
  * @todo This should be a PATCH as it's updating an existing resource 
  */
-app.get('/api/pageset/:num', (req, res) => {
+app.get('/api/pageset/:adminkey/:num', (req, res) => {
+    // TODO: confirming admin key should be a function or something
+    if (adminkey != parseInt(req.params.adminkey) ){
+        res.send("Invalid admin key");
+        console.log("Invalid admin key detected.");
+        return;
+    }
     app.locals.currentAttackId++;
     var pageInt = parseInt(req.params.num);
-    console.log(scenecontrol.currentPage());
+    //console.log(scenecontrol.currentPage());
+    scenecontrol.resetRoundVars();
     scenecontrol.setCurrentPage(pageInt);
-    console.log(scenecontrol.currentPage());
+    console.log("Page set:"+ scenecontrol.currentPage());
     res.send("Page Set:"+ scenecontrol.currentPage()); 
 })
 
 
+app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
+    var attackID = parseInt(req.params.attackid);
+    var theHP =  parseInt(req.params.hp);
+    var theMP =  parseInt(req.params.mp);
+    if ( attackID != app.locals.currentAttackId ){
+        console.log("Client results recieved, but they look old (invalid attack ID.) Discarding.");
+        res.send("Discarding your results due to invalid attack ID. Possible late or desync issue? Yell at Gloop.");
+    } else {
+        scenecontrol.updateRoundVars(theHP,theMP);
+        res.send("Recieved!");
+    }
+
+    
+})
+
+    /*
+    if ( parseInt(req.params.attackid) != app.locals.currentAttackId ){
+        console.log("Client results recieved, but they look old (invalid attack ID.) Discarding.");
+        return;
+    }
+    scenecontrol.updateRoundVars(1,1);
+    */
+
+//app.locals.currentAttackId
+
+
+// gloop this was a bad idea and in your heart you know it
 function secondsSolver(someNum){
     var a = someNum + delaySeconds;
     if ( a >= 60){

@@ -1,6 +1,13 @@
-var currentPage;
+const res = require("express/lib/response");
 
+var currentPage;
 var epochTime;
+
+var AudienceHPTotal;
+var AudienceMPTotal;
+//totals not implemented yet
+var AudienceMPThisRound;
+var AudienceHPThisRound;
 
 const delaySeconds = 20;
 
@@ -24,6 +31,27 @@ function getCurrentTime(){
     return epochTime;
 }
 
+function resetRoundVars(){
+    AudienceHPThisRound = 0;
+    AudienceMPThisRound = 0;
+    return 0; //do I have to do this? I feel like I read somewhere I'm supposed to do this.
+}
+
+function updateRoundVars(hp, mp){
+    AudienceHPThisRound = AudienceHPThisRound + hp;
+    AudienceMPThisRound = AudienceMPThisRound + mp;
+}
+
+function getRoundVars(type){
+    var result
+    if (type == "hp"){
+        result = AudienceHPThisRound;
+    }
+    if (type == "mp"){
+        result = AudienceMPThisRound;
+    }
+    return result;
+}
 
 
 module.exports.setCurrentPage = setCurrentPage;
@@ -31,3 +59,7 @@ module.exports.setCurrentPage = setCurrentPage;
 module.exports.currentPage = getCurrentPage;
 module.exports.epochTime = getCurrentTime;
 //module.exports.epochTime = epochTime;
+module.exports.resetRoundVars = resetRoundVars;
+module.exports.updateRoundVars = updateRoundVars;
+module.exports.getRoundVars = getRoundVars;
+
