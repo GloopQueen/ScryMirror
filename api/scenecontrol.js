@@ -20,7 +20,7 @@ function setCurrentPage(number){
     epochTime = seconds;
        //epochTime = 420;
     console.log(epochTime);
-    console.log("the end of the set current page function.");
+    console.log(`Current Phase set to ${currentPage}.`);
 }
 
 function getCurrentPage(){

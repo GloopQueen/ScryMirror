@@ -101,6 +101,34 @@ app.get('/api/pageset/:adminkey/:num', (req, res) => {
 })
 
 
+/**
+ * @todo The client should really be sending JSON here instead
+ */
+app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
+    var attackID = parseInt(req.params.attackid);
+    var theHP =  parseInt(req.params.hp);
+    var theMP =  parseInt(req.params.mp);
+    var responseCode = 0;
+    var responseText;
+    if ( attackID == app.locals.currentAttackId ){
+        scenecontrol.updateRoundVars(theHP,theMP);
+        responseText = `Response for action ${attackID} recieved.`;
+    } else {
+        console.log(`Recieved but discarding results. Server AttackID is ${app.locals.currentAttackId}, Client said Attack ID ${attackID} HP ${theHP} MP ${theMP}` );
+        responseCode = 1;
+        responseText = `Response Discarded. Desync issue? Server AttackID ${app.locals.currentAttackId}, You said ${attackID}`;
+    }
+
+    res.json({
+        response: responseCode ,
+        responseM: responseText ,
+    }
+    ) 
+
+})
+
+
+/*
 app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
     var attackID = parseInt(req.params.attackid);
     var theHP =  parseInt(req.params.hp);
@@ -115,6 +143,7 @@ app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
 
     
 })
+    */
 
     /*
     if ( parseInt(req.params.attackid) != app.locals.currentAttackId ){
