@@ -11,6 +11,11 @@ var AudienceHPThisRound;
 
 const delaySeconds = 20;
 
+//Poll variables
+const voteForm = {names:["Name1","Name2","Name3","Name4"],mps:[0,0,0,0]};
+
+
+
 function setCurrentPage(number){
     currentPage = number;
     console.log(currentPage);
@@ -54,6 +59,16 @@ function getRoundVars(type){
 }
 
 
+function setVoteOption(num,name,mpvalue){
+    voteForm.names[num] = name;
+    voteForm.mps[num] = mpvalue;
+}
+
+function getVoteForm(){
+    return voteForm;
+}
+
+
 module.exports.setCurrentPage = setCurrentPage;
 //module.exports.currentPage = currentPage;
 module.exports.currentPage = getCurrentPage;
@@ -62,4 +77,5 @@ module.exports.epochTime = getCurrentTime;
 module.exports.resetRoundVars = resetRoundVars;
 module.exports.updateRoundVars = updateRoundVars;
 module.exports.getRoundVars = getRoundVars;
-
+module.exports.setVoteOption =  setVoteOption;
+module.exports.getVoteForm = getVoteForm;

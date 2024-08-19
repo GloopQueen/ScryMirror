@@ -13,6 +13,7 @@ const adminkey = process.env.ADMINKEY || THE_WEED_NUMBER;
 
 // Express middleware setup
 app.use(cors());
+app.use(express.json());
 
 // Express local constants initialization
 app.locals.currentAttackId = 0;
@@ -125,7 +126,100 @@ app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
     }
     ) 
 
+});
+
+app.get('/api/getvoteoptions', (req, res) => {
+    var feedback = scenecontrol.getVoteForm();
+ 
+    res.json({
+        name1: feedback.names[0] ,
+        name2: feedback.names[1] ,
+        name3: feedback.names[2] ,
+        name4: feedback.names[3] ,
+        mp1: feedback.mps[0] ,
+        mp2: feedback.mps[1] ,
+        mp3: feedback.mps[2] ,
+        mp4: feedback.mps[3] , 
+    }
+    ) 
+
+});
+
+
+/**
+ * @todo After there's a db, getvotetally and inputvote should be plugged into it.
+ * They're doing dummy data rn so I can set up the client.
+ */
+app.get('/api/getvotetally', (req, res) => {
+    var phony1 = Math.floor(Math.random() * 101);
+    var phony2 = Math.floor(Math.random() * 101);
+    var phony3 = Math.floor(Math.random() * 101);
+    var phony4 = Math.floor(Math.random() * 101);
+    res.json({
+        choice1: phony1,
+        choice2: phony2,
+        choice3: phony3,
+        choice4: phony4,
+
+    })
+});
+
+app.post("/api/votechoice/", (req, res) => {
+    var responseCode;
+    var responseMessage;
+    if (req.body.attackid != app.locals.currentAttackId ) {
+        responseCode = 1;
+        responseMessage = "Invalid Attack ID. Possible Desync issue?";
+        console.log("Vote recieved but discarded due to Invalid Phase ID.");
+    } else {
+        responseCode = 0;
+        responseMessage = req.body.voteResponse;
+        console.log(`Vote for ${req.body.voteResponse} acccepted.`);
+    }
+    res.json({
+        response: responseCode ,
+        responseM: responseMessage ,
+    })
+
 })
+
+app.post("/api/:adminkey/setvotevalues", (req, res) => {
+        // TODO: confirming admin key should be a function or something
+    if (adminkey != parseInt(req.params.adminkey) ){
+        console.log("Invalid admin key detected.");
+        res.json({
+            response: 1 ,
+            responseM: "Invalid Admin Key Detected." ,
+        });
+        return;
+    }
+    var name1 = req.body.name1;
+    var name2 = req.body.name2;    
+    var name3 = req.body.name3;
+    var name4 = req.body.name4;
+    var mp1 = parseInt(req.body.mp1);
+    var mp2 = parseInt(req.body.mp2);
+    var mp3 = parseInt(req.body.mp3);
+    var mp4 = parseInt(req.body.mp4);
+    scenecontrol.setVoteOption(0,name1,mp1);
+    scenecontrol.setVoteOption(1,name2,mp2);
+    scenecontrol.setVoteOption(2,name3,mp3);
+    scenecontrol.setVoteOption(3,name4,mp4);
+    //thaaaaaaaaaaaaaaaat should probably be a loop. or straight passed as an object
+    //console.log(req.body.name);
+    var feedback = scenecontrol.getVoteForm();
+    var feedbackString = `Vote form set to ${feedback.names[0]} for ${feedback.mps[0]}mp, ${feedback.names[1]} for ${feedback.mps[1]}mp, ${feedback.names[2]} for ${feedback.mps[2]}mp, and ${feedback.names[3]} for ${feedback.mps[3]}mp.`;
+    console.log(feedbackString);
+    
+
+    res.json({
+        response: 0 ,
+        responseM: feedbackString ,
+    }
+    ) 
+});
+
+
 
 
 /*
@@ -154,6 +248,8 @@ app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
     */
 
 //app.locals.currentAttackId
+
+
 
 
 // gloop this was a bad idea and in your heart you know it
