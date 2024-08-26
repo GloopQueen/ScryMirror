@@ -1,3 +1,5 @@
+// Load in env variables
+require('./common/utils/loadEnv.js');
 const express = require('express');
 const scenecontrol = require('./scenecontrol.js');
 const defenders = require('./routers/defenders.js');
@@ -6,6 +8,7 @@ var cors = require('cors');
 
 
 // Adding some clumsy security to prevent potential harassment
+// Base case should be handled by dotenv but leaving it because it's funny
 const THE_WEED_NUMBER = 69;
 const adminkey = process.env.ADMINKEY || THE_WEED_NUMBER;
 
@@ -300,8 +303,8 @@ app.get('/api/pageset/:num', (req, res) => {
 })
 */
 
-const port = process.env.PORT || 3000;
-//const port = 5000;
+// Will be set either by dotenv on local or Vercel on preview/production
+const port = process.env.PORT;
 app.listen(port, () =>{
     console.log(`Listening on ${port}.`);
 })
