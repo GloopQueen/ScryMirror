@@ -2,7 +2,7 @@
 require('./common/utils/loadEnv.js');
 const express = require('express');
 const scenecontrol = require('./scenecontrol.js');
-const defenders = require('./routers/defenders.js');
+const responders = require('./routers/responders.js');
 const app = express();
 var cors = require('cors');
 
@@ -12,15 +12,13 @@ var cors = require('cors');
 const THE_WEED_NUMBER = 69;
 const adminkey = process.env.ADMINKEY || THE_WEED_NUMBER;
 
-
-
 // Express middleware setup
 app.use(cors());
 app.use(express.json());
 
 // Express local constants initialization
-app.locals.currentAttackId = 0;
-app.locals.defendersCount = {};
+app.locals.currentPhaseId = 0;
+app.locals.respondersCount = {};
 
 scenecontrol.setCurrentPage(-1);
 
@@ -44,7 +42,7 @@ app.get('/api/courses/:id', (req, res) => {
 })
 
 
-//gets current "page", aka what attack we're on, probably removeable at this point
+//gets current "page", aka what phase we're on, probably removeable at this point
 app.get('/api/currentpage', (req, res) => {
     var pageInt = parseInt(scenecontrol.currentPage);
     console.log(pageInt);
@@ -65,8 +63,8 @@ app.get('/api/currentstatus', (req, res) => {
 })
 
 
-//gets game status. the "attack ID" increments every time the streamer/boss does a new move or starts a new vote
-//clients can use this information to track what attack pattern and the server uses it to ignore late info.
+//gets game status. the "phase ID" increments every time the streamer/boss does a new move or starts a new vote
+//clients can use this information to track what phase pattern and the server uses it to ignore late info.
 app.get('/api/statusjson', (req, res) => {
     var pageInt = parseInt(scenecontrol.currentPage());
     var timeInt = parseInt(scenecontrol.epochTime());
@@ -81,7 +79,7 @@ app.get('/api/statusjson', (req, res) => {
         thePage: pageInt ,
         currentEpochStamp: timeInt ,
         currentSeconds: s,
-        currentAttackId: app.locals.currentAttackId,
+        currentPhaseId: app.locals.currentPhaseId,
         roundHP: theHP,
         roundMP: theMP,
     }
@@ -99,7 +97,7 @@ app.get('/api/pageset/:adminkey/:num', (req, res) => {
         console.log("Invalid admin key detected.");
         return;
     }
-    app.locals.currentAttackId++;
+    app.locals.currentPhaseId++;
     var pageInt = parseInt(req.params.num);
     //console.log(scenecontrol.currentPage());
     scenecontrol.resetRoundVars();
@@ -112,20 +110,20 @@ app.get('/api/pageset/:adminkey/:num', (req, res) => {
 /**
  * @todo The client should really be sending JSON here instead
  */
-//Client submits info after doing an attack/minigame. Includes how much damage they took and how manypoints they got.
-app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
-    var attackID = parseInt(req.params.attackid);
+//Client submits info after doing an phase/minigame. Includes how much damage they took and how manypoints they got.
+app.get('/api/clientresults/:phaseId/:hp/:mp', (req, res) => {
+    var phaseId = parseInt(req.params.phaseId);
     var theHP =  parseInt(req.params.hp);
     var theMP =  parseInt(req.params.mp);
     var responseCode = 0;
     var responseText;
-    if ( attackID == app.locals.currentAttackId ){
+    if ( phaseId == app.locals.currentPhaseId ){
         scenecontrol.updateRoundVars(theHP,theMP);
-        responseText = `Response for action ${attackID} recieved.`;
+        responseText = `Response for action ${phaseId} recieved.`;
     } else {
-        console.log(`Recieved but discarding results. Server AttackID is ${app.locals.currentAttackId}, Client said Attack ID ${attackID} HP ${theHP} MP ${theMP}` );
+        console.log(`Recieved but discarding results. Server phaseId is ${app.locals.currentPhaseId}, Client said Phase ID ${phaseId} HP ${theHP} MP ${theMP}` );
         responseCode = 1;
-        responseText = `Response Discarded. Desync issue? Server AttackID ${app.locals.currentAttackId}, You said ${attackID}`;
+        responseText = `Response Discarded. Desync issue? Server phaseId ${app.locals.currentPhaseId}, You said ${phaseId}`;
     }
 
     res.json({
@@ -190,12 +188,12 @@ app.post("/api/votechoice/", (req, res) => {
     var responseCode;
     var responseMessage;
     var ballotChoice;
-    var attackID = parseInt(req.body.attackid);
-    if (attackID != app.locals.currentAttackId ) {
+    var phaseID = parseInt(req.body.phaseid);
+    if (phaseID != app.locals.currentPhaseId ) {
         responseCode = 1;
-        responseMessage = "Invalid Attack ID. Possible Desync issue?";
-        console.log("Vote recieved but discarded due to Invalid Phase ID. Recieved "+attackID+ " local is "+ app.locals.currentAttackId);
-        console.log(req.body.attackid)
+        responseMessage = "Invalid Phase ID. Possible Desync issue?";
+        console.log("Vote recieved but discarded due to Invalid Phase ID. Recieved " + phaseID+ " local is "+ app.locals.currentPhaseId);
+        console.log(req.body.phaseid)
     } else {
         ballotChoice = parseInt(req.body.voteResponse);
         scenecontrol.enterBallot(ballotChoice);
@@ -252,13 +250,13 @@ app.post("/api/:adminkey/setvotevalues", (req, res) => {
 
 
 /*
-app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
-    var attackID = parseInt(req.params.attackid);
+app.get('/api/clientresults/:phaseId/:hp/:mp', (req, res) => {
+    var phaseId = parseInt(req.params.phaseId);
     var theHP =  parseInt(req.params.hp);
     var theMP =  parseInt(req.params.mp);
-    if ( attackID != app.locals.currentAttackId ){
-        console.log("Client results recieved, but they look old (invalid attack ID.) Discarding.");
-        res.send("Discarding your results due to invalid attack ID. Possible late or desync issue? Yell at Gloop.");
+    if ( phaseId != app.locals.currentPhaseId ){
+        console.log("Client results recieved, but they look old (invalid phase ID.) Discarding.");
+        res.send("Discarding your results due to invalid phase ID. Possible late or desync issue? Yell at Gloop.");
     } else {
         scenecontrol.updateRoundVars(theHP,theMP);
         res.send("Recieved!");
@@ -269,14 +267,14 @@ app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
     */
 
     /*
-    if ( parseInt(req.params.attackid) != app.locals.currentAttackId ){
-        console.log("Client results recieved, but they look old (invalid attack ID.) Discarding.");
+    if ( parseInt(req.params.phaseId) != app.locals.currentPhaseId ){
+        console.log("Client results recieved, but they look old (invalid phase ID.) Discarding.");
         return;
     }
     scenecontrol.updateRoundVars(1,1);
     */
 
-//app.locals.currentAttackId
+//app.locals.currentPhaseId
 
 
 
@@ -291,7 +289,7 @@ function secondsSolver(someNum){
 }
 
 // Routes
-app.use("/api/defenders", defenders.defendersRouterCreator(app));
+app.use("/api/responders", responders.respondersRouterCreator(app));
 
 /*
 app.get('/api/pageset/:num', (req, res) => {
