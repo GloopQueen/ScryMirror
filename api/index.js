@@ -1,6 +1,8 @@
 // Load in env variables
-require('./common/utils/loadEnv.js');
+require('./common/utils/environment/loadEnv.js');
 const express = require('express');
+// Set up express async error handling
+require('express-async-errors');
 const scenecontrol = require('./scenecontrol.js');
 const responders = require('./routers/responders.js');
 const app = express();
