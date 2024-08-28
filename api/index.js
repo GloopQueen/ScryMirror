@@ -19,7 +19,7 @@ app.use(express.json());
 app.locals.currentAttackId = 0;
 app.locals.defendersCount = {};
 
-scenecontrol.setCurrentPage(0);
+scenecontrol.setCurrentPage(-1);
 
 const delaySeconds = 7;
 
@@ -41,13 +41,14 @@ app.get('/api/courses/:id', (req, res) => {
 })
 
 
-
+//gets current "page", aka what attack we're on, probably removeable at this point
 app.get('/api/currentpage', (req, res) => {
     var pageInt = parseInt(scenecontrol.currentPage);
     console.log(pageInt);
     res.send("Page Is:"+ pageInt); 
 })
 
+//old non-json status getter. probably trash too
 app.get('/api/currentstatus', (req, res) => {
     var pageInt = parseInt(scenecontrol.currentPage());
     var timeInt = parseInt(scenecontrol.epochTime());
@@ -61,6 +62,8 @@ app.get('/api/currentstatus', (req, res) => {
 })
 
 
+//gets game status. the "attack ID" increments every time the streamer/boss does a new move or starts a new vote
+//clients can use this information to track what attack pattern and the server uses it to ignore late info.
 app.get('/api/statusjson', (req, res) => {
     var pageInt = parseInt(scenecontrol.currentPage());
     var timeInt = parseInt(scenecontrol.epochTime());
@@ -85,6 +88,7 @@ app.get('/api/statusjson', (req, res) => {
 /**
  * @todo This should be a PATCH as it's updating an existing resource 
  */
+//Sets page. admin key required as a clumsy security measure.
 app.get('/api/pageset/:adminkey/:num', (req, res) => {
     // TODO: confirming admin key should be a function or something
     if (adminkey != parseInt(req.params.adminkey) ){
@@ -105,6 +109,7 @@ app.get('/api/pageset/:adminkey/:num', (req, res) => {
 /**
  * @todo The client should really be sending JSON here instead
  */
+//Client submits info after doing an attack/minigame. Includes how much damage they took and how manypoints they got.
 app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
     var attackID = parseInt(req.params.attackid);
     var theHP =  parseInt(req.params.hp);
@@ -128,6 +133,10 @@ app.get('/api/clientresults/:attackid/:hp/:mp', (req, res) => {
 
 });
 
+
+//voting related paths
+
+//gets current vote choices
 app.get('/api/getvoteoptions', (req, res) => {
     var feedback = scenecontrol.getVoteForm();
  
@@ -150,28 +159,43 @@ app.get('/api/getvoteoptions', (req, res) => {
  * @todo After there's a db, getvotetally and inputvote should be plugged into it.
  * They're doing dummy data rn so I can set up the client.
  */
-app.get('/api/getvotetally', (req, res) => {
-    var phony1 = Math.floor(Math.random() * 101);
-    var phony2 = Math.floor(Math.random() * 101);
-    var phony3 = Math.floor(Math.random() * 101);
-    var phony4 = Math.floor(Math.random() * 101);
-    res.json({
-        choice1: phony1,
-        choice2: phony2,
-        choice3: phony3,
-        choice4: phony4,
 
+//gets current vote tallies.
+app.get('/api/getvotetally', (req, res) => {
+    var talliesArray = scenecontrol.getVoteTallies();
+    var feedback = scenecontrol.getVoteForm();
+    console.log(talliesArray)
+    //var phony1 = Math.floor(Math.random() * 101);
+    //var phony2 = Math.floor(Math.random() * 101);
+    //var phony3 = Math.floor(Math.random() * 101);
+    //var phony4 = Math.floor(Math.random() * 101);
+    res.json({
+        name1: feedback.names[0] ,
+        name2: feedback.names[1] ,
+        name3: feedback.names[2] ,
+        name4: feedback.names[3] ,
+        vote1: talliesArray[0],
+        vote2: talliesArray[1],
+        vote3: talliesArray[2],
+        vote4: talliesArray[3],
     })
 });
 
+
+//for clients submitting their vote choice aka "ballot" via json
 app.post("/api/votechoice/", (req, res) => {
     var responseCode;
     var responseMessage;
-    if (req.body.attackid != app.locals.currentAttackId ) {
+    var ballotChoice;
+    var attackID = parseInt(req.body.attackid);
+    if (attackID != app.locals.currentAttackId ) {
         responseCode = 1;
         responseMessage = "Invalid Attack ID. Possible Desync issue?";
-        console.log("Vote recieved but discarded due to Invalid Phase ID.");
+        console.log("Vote recieved but discarded due to Invalid Phase ID. Recieved "+attackID+ " local is "+ app.locals.currentAttackId);
+        console.log(req.body.attackid)
     } else {
+        ballotChoice = parseInt(req.body.voteResponse);
+        scenecontrol.enterBallot(ballotChoice);
         responseCode = 0;
         responseMessage = req.body.voteResponse;
         console.log(`Vote for ${req.body.voteResponse} acccepted.`);
@@ -183,6 +207,8 @@ app.post("/api/votechoice/", (req, res) => {
 
 })
 
+
+//for game host to set vote options.
 app.post("/api/:adminkey/setvotevalues", (req, res) => {
         // TODO: confirming admin key should be a function or something
     if (adminkey != parseInt(req.params.adminkey) ){
