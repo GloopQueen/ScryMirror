@@ -8,6 +8,7 @@ const res = require("express/lib/response");
  * 1 - demonstration minigame (2 simple projectiles)
  * 2 - flurry of projectiles
  * 3 - blackjack minigame
+ * 4 - Angry homing ball
  * 
  */
 
@@ -19,6 +20,11 @@ var currentPage;
 var epochTime;
 var AudienceHPTotal;
 var AudienceMPTotal;
+var BossHPTotal;
+//maxes are necessary for gameplay purposes, to show lifebars/cap point collection
+var AudienceHPMax;
+var AudienceMPMax;
+var BossHPMax;
 
 var AudienceMPThisRound;
 var AudienceHPThisRound;
@@ -38,14 +44,14 @@ const talliesArray = [0,0,0,0];
 //the "page" and related variables are to tell the client what attack we're on and when to run it
 function setCurrentPage(number){
     currentPage = number;
-    console.log(currentPage);
+    //console.log(currentPage);
 //    epochTime = parseInt( (Date.now()/1000) + delaySeconds );
     var d = new Date();
     var seconds = Math.floor(d.getTime() / 1000);
     epochTime = seconds;
        //epochTime = 420;
-    console.log(epochTime);
-    console.log(`Current Phase set to ${currentPage}.`);
+    //console.log(epochTime);
+    console.log(`Current page set to ${currentPage}.`);
 }
 
 function getCurrentPage(){
@@ -67,6 +73,47 @@ function updateRoundVars(hp, mp){
     AudienceMPThisRound = AudienceMPThisRound + mp;
 }
 
+function applyRoundVarsToTotals(){
+    AudienceHPTotal = AudienceHPTotal - AudienceHPThisRound;
+    AudienceMPTotal = AudienceMPTotal + AudienceMPThisRound;
+    if (AudienceHPTotal < 0){
+        AudienceHPTotal = 0;
+    }
+    if (AudienceMPTotal > AudienceMPMax){
+        AudienceMPTotal = AudienceMPMax;
+    }
+}
+
+function setGameVarsDirectly(which,value){
+    if (which == "hptotal"){
+        AudienceHPTotal = value;
+    }
+    if (which == "mptotal"){
+        AudienceMPTotal = value;
+    }
+    if (which == "hpmax"){
+        AudienceHPMax = value;
+    }
+    if (which == "mpmax"){
+        AudienceMPMax = value;
+    } 
+    if (which == "bosshpmax"){
+        BossHPMax = value;
+    }
+    if (which == "bosshptotal"){
+        BossHPTotal = value;
+    }
+}
+
+
+
+
+function damageBoss(value){
+    BossHPTotal = BossHPTotal - value;
+}
+
+
+
 function getRoundVars(type){
     var result
     if (type == "hp"){
@@ -74,6 +121,24 @@ function getRoundVars(type){
     }
     if (type == "mp"){
         result = AudienceMPThisRound;
+    }
+    if (type == "hptotal"){
+        result = AudienceHPTotal;
+    }
+    if (type == "mptotal"){
+        result = AudienceMPTotal;
+    }
+    if (type == "hpmax"){
+        result = AudienceHPMax;
+    }
+    if (type == "mpmax"){
+        result = AudienceMPMax;
+    }
+    if (type == "bosshp"){
+        result = BossHPTotal;
+    }
+    if (type == "bossmax"){
+        result = BossHPMax;
     }
     return result;
 }
@@ -115,3 +180,6 @@ module.exports.setVoteOption =  setVoteOption;
 module.exports.getVoteForm = getVoteForm;
 module.exports.enterBallot = enterBallot;
 module.exports.getVoteTallies = getVoteTallies;
+module.exports.applyRoundVarsToTotals = applyRoundVarsToTotals;
+module.exports.setGameVarsDirectly = setGameVarsDirectly;
+module.exports.damageBoss = damageBoss;

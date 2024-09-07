@@ -72,7 +72,15 @@ app.get('/api/statusjson', (req, res) => {
     var timeInt = parseInt(scenecontrol.epochTime());
     var theHP = parseInt(scenecontrol.getRoundVars("hp"));
     var theMP = parseInt(scenecontrol.getRoundVars("mp"));
+    var AudienceTotalHP = parseInt(scenecontrol.getRoundVars("hptotal"));
+    var AudienceTotalMP = parseInt(scenecontrol.getRoundVars("mptotal"));
+    var AudienceMaxHP = parseInt(scenecontrol.getRoundVars("hpmax"));
+    var AudienceMaxMP = parseInt(scenecontrol.getRoundVars("mpmax"));
+    var HPboss = parseInt(scenecontrol.getRoundVars("bosshp"));
+    var HPbossMax = parseInt(scenecontrol.getRoundVars("bossmax"));
     
+
+
     var d = new Date();
     let s = secondsSolver(d.getSeconds());
 
@@ -84,9 +92,40 @@ app.get('/api/statusjson', (req, res) => {
         currentPhaseId: app.locals.currentPhaseId,
         roundHP: theHP,
         roundMP: theMP,
+        totalHP: AudienceTotalHP,
+        totalMP: AudienceTotalMP,
+        maxHP: AudienceMaxHP,
+        maxMP: AudienceMaxMP,
+        bossHP: HPboss,
+        bossMaxHP: HPbossMax,
     }
     )
 })
+
+//edit game vars directly
+app.get('/api/changevar/:adminkey/:varname/:num', (req, res) => {
+    if (adminkey != parseInt(req.params.adminkey) ){
+        res.send("Invalid admin key");
+        console.log("Invalid admin key detected.");
+        return;
+    }
+    var value = parseInt(req.params.num);
+    var varname = String(req.params.varname);
+    scenecontrol.setGameVarsDirectly(varname,value);
+    res.send(`Setting ${varname} to ${value}`);
+})
+
+app.get('/api/damageboss/:adminkey/:num', (req, res) => {
+    if (adminkey != parseInt(req.params.adminkey) ){
+        res.send("Invalid admin key");
+        console.log("Invalid admin key detected.");
+        return;
+    }
+    var value = parseInt(req.params.num);
+    scenecontrol.damageBoss(value);
+    res.send(`Smacked boss for ${value}`);
+})
+
 
 /**
  * @todo This should be a PATCH as it's updating an existing resource 
