@@ -1,1 +1,10 @@
-node_modules
+# Dependency Directories
+node_modules/
+
+# dotenv Environment Variable Files
+.env
+.env.*
+!.env.template
+
+# Vercel
+.vercel
