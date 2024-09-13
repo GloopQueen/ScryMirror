@@ -1,13 +1,20 @@
 // Load in env variables
 require('./common/utils/environment/loadEnv.js');
+// Express and Middleware
 const express = require('express');
+var cors = require('cors');
+// Routers
+const responders = require('./routers/responders.js');
+// Database Value getters/setters
+const dbCurrentPhaseId = require('./common/utils/dbValues/currentPhaseId.js');
+// Utility Files
+const scenecontrol = require('./scenecontrol.js');
+// Express behavior patching
 // Set up express async error handling
 require('express-async-errors');
-const scenecontrol = require('./scenecontrol.js');
-const responders = require('./routers/responders.js');
-const app = express();
-var cors = require('cors');
 
+// Create App
+const app = express();
 
 // Adding some clumsy security to prevent potential harassment
 // Base case should be handled by dotenv but leaving it because it's funny
@@ -67,7 +74,7 @@ app.get('/api/currentstatus', (req, res) => {
 
 //gets game status. the "phase ID" increments every time the streamer/boss does a new move or starts a new vote
 //clients can use this information to track what phase pattern and the server uses it to ignore late info.
-app.get('/api/statusjson', (req, res) => {
+app.get('/api/statusjson', async (req, res) => {
     var pageInt = parseInt(scenecontrol.currentPage());
     var timeInt = parseInt(scenecontrol.epochTime());
     var theHP = parseInt(scenecontrol.getRoundVars("hp"));
@@ -78,6 +85,7 @@ app.get('/api/statusjson', (req, res) => {
     var AudienceMaxMP = parseInt(scenecontrol.getRoundVars("mpmax"));
     var HPboss = parseInt(scenecontrol.getRoundVars("bosshp"));
     var HPbossMax = parseInt(scenecontrol.getRoundVars("bossmax"));
+    const currentPhaseId = await dbCurrentPhaseId.getCurrentPhaseId(app);
     
 
 
@@ -89,7 +97,7 @@ app.get('/api/statusjson', (req, res) => {
         thePage: pageInt ,
         currentEpochStamp: timeInt ,
         currentSeconds: s,
-        currentPhaseId: app.locals.currentPhaseId,
+        currentPhaseId,
         roundHP: theHP,
         roundMP: theMP,
         totalHP: AudienceTotalHP,
@@ -131,14 +139,14 @@ app.get('/api/damageboss/:adminkey/:num', (req, res) => {
  * @todo This should be a PATCH as it's updating an existing resource 
  */
 //Sets page. admin key required as a clumsy security measure.
-app.get('/api/pageset/:adminkey/:num', (req, res) => {
+app.get('/api/pageset/:adminkey/:num', async (req, res) => {
     // TODO: confirming admin key should be a function or something
     if (adminkey != parseInt(req.params.adminkey) ){
         res.send("Invalid admin key");
         console.log("Invalid admin key detected.");
         return;
     }
-    app.locals.currentPhaseId++;
+    await dbCurrentPhaseId.incrementCurrentPhaseId(app);
     var pageInt = parseInt(req.params.num);
     //console.log(scenecontrol.currentPage());
     scenecontrol.resetRoundVars();
@@ -152,19 +160,20 @@ app.get('/api/pageset/:adminkey/:num', (req, res) => {
  * @todo The client should really be sending JSON here instead
  */
 //Client submits info after doing an phase/minigame. Includes how much damage they took and how manypoints they got.
-app.get('/api/clientresults/:phaseId/:hp/:mp', (req, res) => {
+app.get('/api/clientresults/:phaseId/:hp/:mp', async (req, res) => {
     var phaseId = parseInt(req.params.phaseId);
     var theHP =  parseInt(req.params.hp);
     var theMP =  parseInt(req.params.mp);
     var responseCode = 0;
     var responseText;
-    if ( phaseId == app.locals.currentPhaseId ){
+    const currentPhaseId = await dbCurrentPhaseId.getCurrentPhaseId(app);
+    if ( phaseId == currentPhaseId ){
         scenecontrol.updateRoundVars(theHP,theMP);
         responseText = `Response for action ${phaseId} recieved.`;
     } else {
-        console.log(`Recieved but discarding results. Server phaseId is ${app.locals.currentPhaseId}, Client said Phase ID ${phaseId} HP ${theHP} MP ${theMP}` );
+        console.log(`Recieved but discarding results. Server phaseId is ${currentPhaseId}, Client said Phase ID ${phaseId} HP ${theHP} MP ${theMP}` );
         responseCode = 1;
-        responseText = `Response Discarded. Desync issue? Server phaseId ${app.locals.currentPhaseId}, You said ${phaseId}`;
+        responseText = `Response Discarded. Desync issue? Server phaseId ${currentPhaseId}, You said ${phaseId}`;
     }
 
     res.json({
@@ -225,15 +234,16 @@ app.get('/api/getvotetally', (req, res) => {
 
 
 //for clients submitting their vote choice aka "ballot" via json
-app.post("/api/votechoice/", (req, res) => {
+app.post("/api/votechoice/", async (req, res) => {
     var responseCode;
     var responseMessage;
     var ballotChoice;
     var phaseID = parseInt(req.body.phaseid);
-    if (phaseID != app.locals.currentPhaseId ) {
+    const currentPhaseId = await dbCurrentPhaseId.getCurrentPhaseId(app);
+    if (phaseID != currentPhaseId ) {
         responseCode = 1;
         responseMessage = "Invalid Phase ID. Possible Desync issue?";
-        console.log("Vote recieved but discarded due to Invalid Phase ID. Recieved " + phaseID+ " local is "+ app.locals.currentPhaseId);
+        console.log("Vote recieved but discarded due to Invalid Phase ID. Recieved " + phaseID+ " local is "+ currentPhaseId);
         console.log(req.body.phaseid)
     } else {
         ballotChoice = parseInt(req.body.voteResponse);
@@ -291,11 +301,12 @@ app.post("/api/:adminkey/setvotevalues", (req, res) => {
 
 
 /*
-app.get('/api/clientresults/:phaseId/:hp/:mp', (req, res) => {
+app.get('/api/clientresults/:phaseId/:hp/:mp', async (req, res) => {
     var phaseId = parseInt(req.params.phaseId);
     var theHP =  parseInt(req.params.hp);
     var theMP =  parseInt(req.params.mp);
-    if ( phaseId != app.locals.currentPhaseId ){
+    const currentPhaseId = await dbCurrentPhaseId.getCurrentPhaseId(app);
+    if ( phaseId != currentPhaseId ){
         console.log("Client results recieved, but they look old (invalid phase ID.) Discarding.");
         res.send("Discarding your results due to invalid phase ID. Possible late or desync issue? Yell at Gloop.");
     } else {
@@ -308,14 +319,15 @@ app.get('/api/clientresults/:phaseId/:hp/:mp', (req, res) => {
     */
 
     /*
-    if ( parseInt(req.params.phaseId) != app.locals.currentPhaseId ){
+    const currentPhaseId = await dbCurrentPhaseId.getCurrentPhaseId(app);
+    if ( parseInt(req.params.phaseId) != currentPhaseId ){
         console.log("Client results recieved, but they look old (invalid phase ID.) Discarding.");
         return;
     }
     scenecontrol.updateRoundVars(1,1);
     */
 
-//app.locals.currentPhaseId
+//const currentPhaseId = await dbCurrentPhaseId.getCurrentPhaseId(app);
 
 
 

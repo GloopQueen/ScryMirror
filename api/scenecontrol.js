@@ -41,7 +41,7 @@ const talliesArray = [0,0,0,0];
 
 
 
-//the "page" and related variables are to tell the client what attack we're on and when to run it
+//the "page" and related variables are to tell the client what phase we're on and when to run it
 function setCurrentPage(number){
     currentPage = number;
     //console.log(currentPage);

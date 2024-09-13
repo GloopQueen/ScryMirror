@@ -1,4 +1,8 @@
+// Express
 const express = require('express');
+// Database Value getters/setters
+const dbCurrentPhaseId = require('../common/utils/dbValues/currentPhaseId');
+const dbRespondersCount = require('../common/utils/dbValues/respondersCount');
 
 /**
  * Function to create a router for the "/responders" endpoint that handles tracking and
@@ -10,39 +14,35 @@ const respondersRouterCreator = (app) => {
   const router = express.Router();
 
   // Custom middleware to 404 if the request phase id is higher than the app's currentPhaseId
-  const phaseNotFoundMiddleware = (req, res, next) => {
+  const phaseNotFoundMiddleware = async (req, res, next) => {
     const phaseId = req.params.phaseId;
-    if (phaseId && phaseId > app.locals.currentPhaseId) {
+    const currentPhaseId = await dbCurrentPhaseId.getCurrentPhaseId(app);
+    if (phaseId && phaseId > currentPhaseId) {
       return res.status(404).end();
     }
     next();
   }
 
   // PATCH method allowing responders to register
-  router.patch('/:phaseId', phaseNotFoundMiddleware, (req, res, _next) => {
+  router.patch('/:phaseId', phaseNotFoundMiddleware, async (req, res, _next) => {
     const phaseId = req.params.phaseId;
-    const respondersCount = app.locals.respondersCount;
+    const respondersCount = await dbRespondersCount.getRespondersCountForAll(app);
 
-    // If this is the first received responder, initialize count
-    if (!respondersCount[phaseId]) {
-      respondersCount[phaseId] = 0;
-    }
-    respondersCount[phaseId] += 1;
-
-    app.locals.respondersCount = respondersCount;
+    await dbRespondersCount.incrementRespondersCountForPhase(app, phaseId);
 
     res.status(200).end();
   });
 
   // GET method for the responders count of all phases
-  router.get('/', (_req, res, _next) => {
-    res.json(app.locals.respondersCount);
+  router.get('/', async (_req, res, _next) => {
+    const respondersCount = await dbRespondersCount.getRespondersCountForAll(app);
+    res.json(respondersCount);
   });
 
   // GET method for the responders count of one phase
-  router.get('/:phaseId', phaseNotFoundMiddleware, (req, res, next) => {
+  router.get('/:phaseId', phaseNotFoundMiddleware, async (req, res, next) => {
     const phaseId = req.params.phaseId;
-    const numResponders = app.locals.respondersCount[phaseId];
+    const numResponders = await dbRespondersCount.getRespondersCountForPhase(app, phaseId);
 
     res.send(`The number of responders for phase ${phaseId} is ${numResponders ? numResponders : '0'}`); 
   });
