@@ -1,4 +1,4 @@
-const kv = require("@vercel/kv");
+const kv = require("@vercel/kv").kv;
 
 // Vercel Redis Constants
 const CURRENT_PHASE_ID_STRING = 'current_phase_id';
