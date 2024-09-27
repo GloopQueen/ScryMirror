@@ -85,22 +85,22 @@ function applyRoundVarsToTotals(){
 }
 
 function setGameVarsDirectly(which,value){
-    if (which == "hptotal"){
+    if (which == "totalhp"){
         AudienceHPTotal = value;
     }
-    if (which == "mptotal"){
+    if (which == "totalmp"){
         AudienceMPTotal = value;
     }
-    if (which == "hpmax"){
+    if (which == "maxhp"){
         AudienceHPMax = value;
     }
-    if (which == "mpmax"){
+    if (which == "maxmp"){
         AudienceMPMax = value;
     } 
-    if (which == "bosshpmax"){
+    if (which == "bossmaxhp"){
         BossHPMax = value;
     }
-    if (which == "bosshptotal"){
+    if (which == "bosshp"){
         BossHPTotal = value;
     }
 }

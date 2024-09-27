@@ -134,6 +134,12 @@ app.get('/api/damageboss/:adminkey/:num', (req, res) => {
     res.send(`Smacked boss for ${value}`);
 })
 
+app.get('/api/applyvars/', (req, res) => {
+    scenecontrol.applyRoundVarsToTotals;
+    scenecontrol.resetRoundVars;
+    res.send(`Round vars applied and cleared.`);
+})
+
 
 /**
  * @todo This should be a PATCH as it's updating an existing resource 
@@ -208,7 +214,7 @@ app.get('/api/getvoteoptions', (req, res) => {
 
 /**
  * @todo After there's a db, getvotetally and inputvote should be plugged into it.
- * They're doing dummy data rn so I can set up the client.
+ * 
  */
 
 //gets current vote tallies.
@@ -297,7 +303,15 @@ app.post("/api/:adminkey/setvotevalues", (req, res) => {
     ) 
 });
 
-
+app.get('/api/clearvotes/:adminkey/', (req, res) => {
+    if (adminkey != parseInt(req.params.adminkey) ){
+        res.send("Invalid admin key");
+        console.log("Invalid admin key detected.");
+        return;
+    }
+    scenecontrol.clearTallies();
+    res.send(`Cleared Tallies`);
+})
 
 
 /*
