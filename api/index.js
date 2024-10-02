@@ -1,19 +1,22 @@
-// Load in env variables
+/* Load in env variables */
 require('./common/utils/environment/loadEnv.js');
-// Express and Middleware
+/* Express and Middleware */
 const express = require('express');
-var cors = require('cors');
-// Routers
+const cors = require('cors');
+const cookieParserMiddleware = require('./common/middleware/cookie');
+const sessionMiddleware = require('./common/middleware/auth/session');
+/* Routers */
 const responders = require('./routers/responders.js');
-// Database Value getters/setters
+const auth = require('./routers/auth.js');
+/* Database Value getters/setters */
 const dbCurrentPhaseId = require('./common/utils/dbValues/currentPhaseId.js');
-// Utility Files
+/* Utility Files */
 const scenecontrol = require('./scenecontrol.js');
-// Express behavior patching
+/* Express behavior patching */
 // Set up express async error handling
 require('express-async-errors');
 
-// Create App
+/* Create App */
 const app = express();
 
 // Adding some clumsy security to prevent potential harassment
@@ -21,13 +24,24 @@ const app = express();
 const THE_WEED_NUMBER = 69;
 const adminkey = process.env.ADMINKEY || THE_WEED_NUMBER;
 
-// Express middleware setup
-app.use(cors());
-app.use(express.json());
-
-// Express local constants initialization
+/* Express local constants initialization */
+app.locals.cookieSecrets = process.env.COOKIE_SIGN_SECRETS?.split(",")?.map(i => i.trim());
 app.locals.currentPhaseId = 0;
 app.locals.respondersCount = {};
+
+/* Express middleware setup */
+// Initialize common middleware
+cookieParserMiddleware.initCookieParserMiddleware(app.locals.cookieSecrets[0]);
+sessionMiddleware.initSessionMiddleware(app.locals.cookieSecrets);
+
+// Add middleware to top level application (Order is important)
+app.use(cors());
+app.use(cookieParserMiddleware.getCookieParserMiddleware());
+// Feature flag the session middleware for now
+if (process.env.SESSION_ENABLED === 'true'){
+  app.use(sessionMiddleware.getSessionMiddleware());
+}
+app.use(express.json());
 
 scenecontrol.setCurrentPage(-1);
 
@@ -39,12 +53,12 @@ app.get('/', (req, res) =>{
 });
 
 
-/// TODO: this is probably garbage
+// TODO: this is probably garbage
 app.get('/api/courses', (req, res) =>{
     res.send([1,2,3]);
 });
 
-/// TODO: this too can probably go
+// TODO: this too can probably go
 app.get('/api/courses/:id', (req, res) => {
     res.send(req.params.id); 
     //res.send(req.query); - gets queries
@@ -355,8 +369,11 @@ function secondsSolver(someNum){
    return a;
 }
 
-// Routes
+/* Routes */
 app.use("/api/responders", responders.respondersRouterCreator(app));
+if (process.env.SESSION_ENABLED === 'true') {
+  app.use("/api/auth", auth.authRouterCreator(app));
+}
 
 /*
 app.get('/api/pageset/:num', (req, res) => {

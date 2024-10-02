@@ -5,7 +5,7 @@ const dbCurrentPhaseId = require('../common/utils/dbValues/currentPhaseId');
 const dbRespondersCount = require('../common/utils/dbValues/respondersCount');
 
 /**
- * Function to create a router for the "/responders" endpoint that handles tracking and
+ * Function to create a router for the "/responders" endpoints that handles tracking and
  * displaying the number of responders for each phase.
  * @param {Express} app The express application, used to retrieve and update local constants.
  * @returns {Router} A router to be set on the "/responders" endpoint.
@@ -48,6 +48,6 @@ const respondersRouterCreator = (app) => {
   });
 
   return router;
-}
+};
 
 module.exports.respondersRouterCreator = respondersRouterCreator;
