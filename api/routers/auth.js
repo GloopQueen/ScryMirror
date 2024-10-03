@@ -1,4 +1,4 @@
-// Express
+/* Express */
 const express = require('express');
 
 /**
@@ -7,7 +7,7 @@ const express = require('express');
  * @param {Express} app The express application, used to retrieve and update local constants.
  * @returns {Router} A router to be set on the "/auth" endpoint.
  */
-const authRouterCreator = (app) => {
+const authRouterCreator = (_app) => {
   const router = express.Router();
 
   // GET method, used for testing currently
@@ -37,6 +37,6 @@ const authRouterCreator = (app) => {
   });
 
   return router;
-}
+};
 
 module.exports.authRouterCreator = authRouterCreator;

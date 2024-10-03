@@ -1,6 +1,6 @@
-// Express
+/* Express */
 const express = require('express');
-// Database Value getters/setters
+/* Database Value getters/setters */
 const dbCurrentPhaseId = require('../common/utils/dbValues/currentPhaseId');
 const dbRespondersCount = require('../common/utils/dbValues/respondersCount');
 
