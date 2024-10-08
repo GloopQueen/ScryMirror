@@ -42,7 +42,9 @@ app.use(cookieParserMiddleware.getCookieParserMiddleware());
 // Feature flag the session middleware for now
 if (process.env.SESSION_ENABLED === 'true'){
   app.use(sessionMiddleware.getSessionMiddleware());
-  app.use(sessionDropTrackingMiddleware);
+  if (process.env.SESSION_TRACKING_ENABLED === 'true') {
+    app.use(sessionDropTrackingMiddleware);
+  }
 }
 app.use(express.json());
 
