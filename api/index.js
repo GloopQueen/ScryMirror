@@ -1,33 +1,52 @@
-// Load in env variables
-require('./common/utils/environment/loadEnv.js');
-// Express and Middleware
+/* Load in env variables */
+require('../src/common/utils/environment/loadEnv.js');
+/* Express and Middleware */
 const express = require('express');
-var cors = require('cors');
-// Routers
-const responders = require('./routers/responders.js');
-// Database Value getters/setters
-const dbCurrentPhaseId = require('./common/utils/dbValues/currentPhaseId.js');
-// Utility Files
-const scenecontrol = require('./scenecontrol.js');
-// Express behavior patching
+const cors = require('cors');
+const cookieParserMiddleware = require('../src/common/middleware/cookie/index.js');
+const sessionMiddleware = require('../src/common/middleware/auth/session/index.js');
+const sessionDropTrackingMiddleware = require('../src/common/middleware/auth/session/session-drop-tracking.js').sessionDropTrackingMiddleware;
+/* Routers */
+const analytics = require('../src/routers/analytics/index.js');
+const responders = require('../src/routers/responders.js');
+const auth = require('../src/routers/auth.js');
+/* Database Value getters/setters */
+const dbCurrentPhaseId = require('../src/common/utils/dbValues/currentPhaseId.js');
+/* Utility Files */
+const scenecontrol = require('./scenecontrol');
+/* Express behavior patching */
 // Set up express async error handling
 require('express-async-errors');
 
-// Create App
+/* Create App */
 const app = express();
 
 // Adding some clumsy security to prevent potential harassment
 // Base case should be handled by dotenv but leaving it because it's funny
-const THE_WEED_NUMBER = 69;
-const adminkey = process.env.ADMINKEY || THE_WEED_NUMBER;
+const THE_WEED_NUMBER = '69';
 
-// Express middleware setup
-app.use(cors());
-app.use(express.json());
-
-// Express local constants initialization
+/* Express local constants initialization */
+app.locals.adminKey = process.env.ADMINKEY || THE_WEED_NUMBER;
+app.locals.cookieSecrets = process.env.COOKIE_SIGN_SECRETS?.split(",")?.map(i => i.trim());
 app.locals.currentPhaseId = 0;
 app.locals.respondersCount = {};
+
+/* Express middleware setup */
+// Initialize common middleware
+cookieParserMiddleware.initCookieParserMiddleware(app.locals.cookieSecrets[0]);
+sessionMiddleware.initSessionMiddleware(app.locals.cookieSecrets);
+
+// Add middleware to top level application (Order is important)
+app.use(cors());
+app.use(cookieParserMiddleware.getCookieParserMiddleware());
+// Feature flag the session middleware for now
+if (process.env.SESSION_ENABLED === 'true'){
+  app.use(sessionMiddleware.getSessionMiddleware());
+  if (process.env.SESSION_TRACKING_ENABLED === 'true') {
+    app.use(sessionDropTrackingMiddleware);
+  }
+}
+app.use(express.json());
 
 scenecontrol.setCurrentPage(-1);
 
@@ -39,12 +58,12 @@ app.get('/', (req, res) =>{
 });
 
 
-/// TODO: this is probably garbage
+// TODO: this is probably garbage
 app.get('/api/courses', (req, res) =>{
     res.send([1,2,3]);
 });
 
-/// TODO: this too can probably go
+// TODO: this too can probably go
 app.get('/api/courses/:id', (req, res) => {
     res.send(req.params.id); 
     //res.send(req.query); - gets queries
@@ -112,7 +131,7 @@ app.get('/api/statusjson', async (req, res) => {
 
 //edit game vars directly
 app.get('/api/changevar/:adminkey/:varname/:num', (req, res) => {
-    if (adminkey != parseInt(req.params.adminkey) ){
+    if (app.locals.adminKey !== req.params.adminkey){
         res.send("Invalid admin key");
         console.log("Invalid admin key detected.");
         return;
@@ -124,7 +143,7 @@ app.get('/api/changevar/:adminkey/:varname/:num', (req, res) => {
 })
 
 app.get('/api/damageboss/:adminkey/:num', (req, res) => {
-    if (adminkey != parseInt(req.params.adminkey) ){
+    if (app.locals.adminKey !== req.params.adminkey){
         res.send("Invalid admin key");
         console.log("Invalid admin key detected.");
         return;
@@ -147,7 +166,7 @@ app.get('/api/applyvars/', (req, res) => {
 //Sets page. admin key required as a clumsy security measure.
 app.get('/api/pageset/:adminkey/:num', async (req, res) => {
     // TODO: confirming admin key should be a function or something
-    if (adminkey != parseInt(req.params.adminkey) ){
+    if (app.locals.adminKey !== req.params.adminkey){
         res.send("Invalid admin key");
         console.log("Invalid admin key detected.");
         return;
@@ -269,7 +288,7 @@ app.post("/api/votechoice/", async (req, res) => {
 //for game host to set vote options.
 app.post("/api/:adminkey/setvotevalues", (req, res) => {
         // TODO: confirming admin key should be a function or something
-    if (adminkey != parseInt(req.params.adminkey) ){
+    if (app.locals.adminKey !== req.params.adminkey){
         console.log("Invalid admin key detected.");
         res.json({
             response: 1 ,
@@ -304,7 +323,7 @@ app.post("/api/:adminkey/setvotevalues", (req, res) => {
 });
 
 app.get('/api/clearvotes/:adminkey/', (req, res) => {
-    if (adminkey != parseInt(req.params.adminkey) ){
+    if (app.locals.adminKey !== req.params.adminkey){
         res.send("Invalid admin key");
         console.log("Invalid admin key detected.");
         return;
@@ -355,8 +374,12 @@ function secondsSolver(someNum){
    return a;
 }
 
-// Routes
+/* Routes */
+app.use("/api/analytics", analytics.analyticsRouterCreator(app));
 app.use("/api/responders", responders.respondersRouterCreator(app));
+if (process.env.SESSION_ENABLED === 'true') {
+  app.use("/api/auth", auth.authRouterCreator(app));
+}
 
 /*
 app.get('/api/pageset/:num', (req, res) => {
