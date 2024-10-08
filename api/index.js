@@ -1,17 +1,17 @@
 /* Load in env variables */
-require('./common/utils/environment/loadEnv.js');
+require('../src/common/utils/environment/loadEnv.js');
 /* Express and Middleware */
 const express = require('express');
 const cors = require('cors');
-const cookieParserMiddleware = require('./common/middleware/cookie');
-const sessionMiddleware = require('./common/middleware/auth/session');
-const sessionDropTrackingMiddleware = require('./common/middleware/auth/session/session-drop-tracking.js').sessionDropTrackingMiddleware;
+const cookieParserMiddleware = require('../src/common/middleware/cookie/index.js');
+const sessionMiddleware = require('../src/common/middleware/auth/session/index.js');
+const sessionDropTrackingMiddleware = require('../src/common/middleware/auth/session/session-drop-tracking.js').sessionDropTrackingMiddleware;
 /* Routers */
-const analytics = require('./routers/analytics');
-const responders = require('./routers/responders');
-const auth = require('./routers/auth');
+const analytics = require('../src/routers/analytics/index.js');
+const responders = require('../src/routers/responders.js');
+const auth = require('../src/routers/auth.js');
 /* Database Value getters/setters */
-const dbCurrentPhaseId = require('./common/utils/dbValues/currentPhaseId');
+const dbCurrentPhaseId = require('../src/common/utils/dbValues/currentPhaseId.js');
 /* Utility Files */
 const scenecontrol = require('./scenecontrol');
 /* Express behavior patching */
