@@ -31,6 +31,12 @@ var AudienceHPThisRound;
 
 const delaySeconds = 20;
 
+//These should be un-hardcoded in the future but for now they're easy to get to
+const suggested_boss_hp = 1000;
+const suggested_audience_hp_max = 100;
+const suggested_audience_mp_max = 500;
+
+
 //Poll variables
 /**
  * @todo Vote tallies should definitely get moved to the database once that actually exists.
@@ -39,6 +45,14 @@ const voteForm = {names:["Name1","Name2","Name3","Name4"],mps:[0,0,0,0]};
 const talliesArray = [0,0,0,0];
 
 
+function setGameVarsSane(){
+    AudienceHPTotal = suggested_audience_hp_max;
+    AudienceMPTotal = 0;
+    BossHPTotal = suggested_boss_hp;
+    AudienceHPMax = suggested_audience_hp_max;
+    AudienceMPMax = suggested_audience_mp_max;
+    BossHPMax = suggested_boss_hp;
+}
 
 
 //the "page" and related variables are to tell the client what phase we're on and when to run it
@@ -74,8 +88,13 @@ function updateRoundVars(hp, mp){
 }
 
 function applyRoundVarsToTotals(){
+    //console.log("does this even fudging run??");
     AudienceHPTotal = AudienceHPTotal - AudienceHPThisRound;
+    console.log("Audience total MP was:"+ AudienceMPTotal);
     AudienceMPTotal = AudienceMPTotal + AudienceMPThisRound;
+    console.log("subtracted:"+AudienceMPThisRound);
+    console.log("Audience MP is now:"+AudienceMPTotal);
+    
     if (AudienceHPTotal < 0){
         AudienceHPTotal = 0;
     }
@@ -183,3 +202,5 @@ module.exports.getVoteTallies = getVoteTallies;
 module.exports.applyRoundVarsToTotals = applyRoundVarsToTotals;
 module.exports.setGameVarsDirectly = setGameVarsDirectly;
 module.exports.damageBoss = damageBoss;
+module.exports.clearTallies = clearTallies;
+module.exports.setGameVarsSane = setGameVarsSane;

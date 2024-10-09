@@ -49,6 +49,7 @@ if (process.env.SESSION_ENABLED === 'true'){
 app.use(express.json());
 
 scenecontrol.setCurrentPage(-1);
+scenecontrol.setGameVarsSane();
 
 const delaySeconds = 7;
 
@@ -154,9 +155,9 @@ app.get('/api/damageboss/:adminkey/:num', (req, res) => {
 })
 
 app.get('/api/applyvars/', (req, res) => {
-    scenecontrol.applyRoundVarsToTotals;
-    scenecontrol.resetRoundVars;
-    res.send(`Round vars applied and cleared.`);
+    scenecontrol.applyRoundVarsToTotals();
+    //scenecontrol.resetRoundVars;
+    res.send(`Round vars applied and cleared!`);
 })
 
 
