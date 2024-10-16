@@ -19,6 +19,7 @@ const SESSION_MEMORY_STORE = new MemoryStore(
 // Options object used to configure the session middleware
 const DEFAULT_SESSION_MIDDLEWARE_OPTIONS = {
   cookie: { 
+    domain: process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL,
     maxAge: SESSION_TTL
   },
   store: SESSION_MEMORY_STORE,
